@@ -7,7 +7,7 @@ Keep the backticks (\`) but remove the `${}`, so `${ITEM}` becomes `My Answer`.
 Unless otherwise specified, list the command and all arguments that you passed to it.
 
 ## Repository Configuration
-1. The `crazy_turtle` git repository consists of the ROS 2 packages `${pkg_name1}` and `${pkg_name2}`.
+1. The `crazy_turtle` git repository consists of the ROS 2 packages `crazy_turtle` and `crazy_turtle_interfaces`.
 2. The package `${pkg_name1}` has `<build_type>` of `${insert <build_type>}`.
 2. The package `${pkg_name2}` has a `<build_type>` of `${insert <build_type>}`.
 
