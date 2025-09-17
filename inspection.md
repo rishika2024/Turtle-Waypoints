@@ -8,12 +8,12 @@ Unless otherwise specified, list the command and all arguments that you passed t
 
 ## Repository Configuration
 1. The `crazy_turtle` git repository consists of the ROS 2 packages `crazy_turtle` and `crazy_turtle_interfaces`.
-2. The package `${pkg_name1}` has `<build_type>` of `${insert <build_type>}`.
-2. The package `${pkg_name2}` has a `<build_type>` of `${insert <build_type>}`.
+2. The package `crazy_turtle` has `<build_type>` of `ament_python`.
+2. The package `crazy_turtle_interfaces` has a `<build_type>` of `ament_cmake`.
 
 
 ## Setup Instructions
-1. Build the workspace using `${insert command here}`.
+1. Build the workspace using `mkdir -p ~/me495/src`.
 2. Initialize the ROS environment (i.e., set the necessary ROS environment variables) by executing `${insert command here}`
 3. Make sure no other ROS nodes are running prior to starting by inspecting the results of the ROS command `${insert command here}`.
 3. Run the launchfile `go_crazy_turtle.launch.xml` by executing `${insert command here}`.
