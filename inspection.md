@@ -14,10 +14,10 @@ Unless otherwise specified, list the command and all arguments that you passed t
 
 ## Setup Instructions
 1. Build the workspace using `mkdir -p ~/me495/src`.
-2. Initialize the ROS environment (i.e., set the necessary ROS environment variables) by executing `${insert command here}`
-3. Make sure no other ROS nodes are running prior to starting by inspecting the results of the ROS command `${insert command here}`.
-3. Run the launchfile `go_crazy_turtle.launch.xml` by executing `${insert command here}`.
-4. When running you can see an interactive visual depiction of the ROS graph using the `${command}` command.
+2. Initialize the ROS environment (i.e., set the necessary ROS environment variables) by executing `source /opt/ros/kilted/setup.bash`
+3. Make sure no other ROS nodes are running prior to starting by inspecting the results of the ROS command `kill -9 <PID>`.
+3. Run the launchfile `go_crazy_turtle.launch.xml` by executing `ros2 launch crazy_turtle go_crazy_turtle.launch.xml`.
+4. When running you can see an interactive visual depiction of the ROS graph using the `ros2 run rqt_graph rqt_graph` command.
    The ROS graph, including all topics and node labels, looks like:
    ![The ROS Graph](${export svg image from the viewer, add it to your homework repository, put path here so it displays in the README.md})
 
