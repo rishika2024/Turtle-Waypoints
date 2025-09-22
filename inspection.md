@@ -109,7 +109,7 @@ If the nodes launched from the `launchfile` are not running, you will get incorr
 
 11. Use the ROS command `ros2 param describe mover velocity` to get information about the `/mover` `velocity` parameter, including its type, description, and constraints
     ```
-   Parameter name: velocity
+    Parameter name: velocity
      Type: double
      Description: The velocity of the turtle
      Constraints:
