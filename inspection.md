@@ -82,21 +82,76 @@ If the nodes launched from the `launchfile` are not running, you will get incorr
 
    ```
 
-9. Use the ROS command `${command and args}` to determine the type of the `/switch` service, which is `${service type}`.
+9. Use the ROS command `ros2 service type /switch` to determine the type of the `/switch` service, which is `crazy_turtle_interfaces/srv/Switch`.
 
-10. Use the ROS command `${command and args}` to list the parameters of all running nodes
+10. Use the ROS command `ros2 param list` to list the parameters of all running nodes
     ```
-    ${list each parameter here, 1 per line}
+    /mover:
+     start_type_description_service
+     use_sim_time
+     velocity
+   /roving_turtle:
+     background_b
+     background_g
+     background_r
+     holonomic
+     qos_overrides./parameter_events.publisher.depth
+     qos_overrides./parameter_events.publisher.durability
+     qos_overrides./parameter_events.publisher.history
+     qos_overrides./parameter_events.publisher.reliability
+     start_type_description_service
+     use_sim_time
+   /rqt_gui_py_node_6684:
+     start_type_description_service
+     use_sim_time
+
     ```
 
-11. Use the ROS command `${command and args}` to get information about the `/mover` `velocity` parameter, including its type, description, and constraints
+11. Use the ROS command `ros2 param describe mover velocity` to get information about the `/mover` `velocity` parameter, including its type, description, and constraints
     ```
-    ${full output of the command here}
+   Parameter name: velocity
+     Type: double
+     Description: The velocity of the turtle
+     Constraints:
+
     ```
 
-12. Use the ROS command `${command and args}` to retrieve a template/prototype for entering parameters for the `/switch` service on the command line.
+12. Use the ROS command `ros2 service call -h` to retrieve a template/prototype for entering parameters for the `/switch` service on the command line.
     ```
-    ${full output of the command here}
+    usage: ros2 service call [-h] [--stdin] [-r N]
+                         [--qos-profile {unknown,default,system_default,sensor_data,services_default,parameters,parameter_events,action_status_default,best_available,rosout_default}]
+                         [--qos-depth N] [--qos-history {system_default,keep_last,keep_all,unknown}] [--qos-reliability {system_default,reliable,best_effort,unknown,best_available}]
+                         [--qos-durability {system_default,transient_local,volatile,unknown,best_available}]
+                         [--qos-liveliness {system_default,automatic,manual_by_topic,unknown,best_available}]
+                         [--qos-liveliness-lease-duration-seconds QOS_LIVELINESS_LEASE_DURATION_SECONDS]
+                         service_name service_type [values]
+
+Call a service
+
+positional arguments:
+  service_name          Name of the ROS service to call to (e.g. '/add_two_ints')
+  service_type          Type of the ROS service (e.g. 'std_srvs/srv/Empty')
+  values                Values to fill the service request with in YAML format (e.g. '{a: 1, b: 2}'), otherwise the service request will be published with default values
+
+options:
+  -h, --help            show this help message and exit
+  --stdin               Read values from standard input
+  -r N, --rate N        Repeat the call at a specific rate in Hz
+  --qos-profile {unknown,default,system_default,sensor_data,services_default,parameters,parameter_events,action_status_default,best_available,rosout_default}
+                        Quality of service preset profile to service client with (default: services_default)
+  --qos-depth N         Queue size setting to service client with (overrides depth value of --qos-profile option, default: 10)
+  --qos-history {system_default,keep_last,keep_all,unknown}
+                        History of samples setting to service client with (overrides history value of --qos-profile option, default: keep_last)
+  --qos-reliability {system_default,reliable,best_effort,unknown,best_available}
+                        Quality of service reliability setting to service client with (overrides reliability value of --qos-profile option, default: reliable )
+  --qos-durability {system_default,transient_local,volatile,unknown,best_available}
+                        Quality of service durability setting to service client with (overrides durability value of --qos-profile option, default: volatile )
+  --qos-liveliness {system_default,automatic,manual_by_topic,unknown,best_available}
+                        Quality of service liveliness setting to service client with (overrides liveliness value of --qos-profile option, default system_default)
+  --qos-liveliness-lease-duration-seconds QOS_LIVELINESS_LEASE_DURATION_SECONDS
+                        Quality of service liveliness lease duration setting to service client with (overrides liveliness lease duration value of --qos-profile option, default: 0
+                        nanoseconds)
+
     ```
 
 ## Package Exploration
