@@ -90,7 +90,7 @@ If the nodes launched from the `launchfile` are not running, you will get incorr
      start_type_description_service
      use_sim_time
      velocity
-   /roving_turtle:
+    /roving_turtle:
      background_b
      background_g
      background_r
@@ -101,7 +101,7 @@ If the nodes launched from the `launchfile` are not running, you will get incorr
      qos_overrides./parameter_events.publisher.reliability
      start_type_description_service
      use_sim_time
-   /rqt_gui_py_node_6684:
+    /rqt_gui_py_node_6684:
      start_type_description_service
      use_sim_time
 
