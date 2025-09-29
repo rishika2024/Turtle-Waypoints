@@ -23,7 +23,7 @@ class Waypoint(Node):
         self.tmr = self.create_timer(self.timeperiod, self.timer_callback)
         self.srv = self.create_service(Empty, 'toggle', self.toggle_callback)
         self.cmd_vel_pub = self.create_publisher(Twist, '/turtle1/cmd_vel', 10)
-        #self.pose_pub = self.create_subscription(Pose, '/turtle1/pose', self.pose_callback, 10)
+        self.pose_pub = self.create_subscription(Pose, '/turtle1/pose', self.pose_callback, 10)
         self.current_pose = None
 
         self.srv_load= self.create_service(WayPoints, 'load', self.load_callback)
@@ -38,6 +38,8 @@ class Waypoint(Node):
 
         
         self.teleport = self.create_client(TeleportAbsolute, 'turtle1/teleport_absolute')
+
+        self.waypoints_list = []
         
     def toggle_callback(self, request, response):
 
@@ -65,79 +67,78 @@ class Waypoint(Node):
         else:
             msg.linear.x = 0.0
             msg.angular.z = 0.0
-            self.cmd_vel_pub.publish(msg)      
+            self.cmd_vel_pub.publish(msg)   
 
-  
+    def pose_callback(self, msg):
 
-
-        
+        self.current_pose = msg
+        self.get_logger().debug(f"Pose updated: x={msg.x:.2f}, y={msg.y:.2f}, theta={msg.theta:.2f}")
 
     def draw_x(self, x, y):
 
         self.get_logger().info(f"Drawing X at ({x}, {y})")
     
-        # First, lift pen and move to starting position
+        
         pen_req = SetPen.Request()
-        """pen_req.off = 1  # Lift pen
-        pen_req.width = 5 
-        self.pen.call_async(pen_req)        
-        time.sleep(0.1)"""
+        pen_req.b = 255
+        pen_req.off = 1  
+        pen_req.width = 5
+        future = self.pen.call_async(pen_req)        
+        time.sleep(0.1)
         
         teleport_request = TeleportAbsolute.Request()       
-        teleport_request.x = x - 0.5
-        teleport_request.y = y + 0.5
+        teleport_request.x = x - 0.25
+        teleport_request.y = y + 0.25
         teleport_request.theta = 0.0
         self.teleport.call_async(teleport_request)
         time.sleep(0.1)
     
-        # Lower pen for first diagonal
-        pen_req.off = 0  # Lower pen
+        
+        pen_req.off = 0 
         pen_req.width = 5 
         self.pen.call_async(pen_req)
         time.sleep(0.1)
     
-        # Draw first diagonal (top-left to bottom-right)
-        teleport_request.x = x + 0.5
-        teleport_request.y = y - 0.5
+        
+        teleport_request.x = x + 0.25
+        teleport_request.y = y - 0.25
         teleport_request.theta = 0.0
         self.teleport.call_async(teleport_request)
         time.sleep(0.1)
     
-        # Lift pen and move to start of second diagonal
-        pen_req.off = 1  # Lift pen
+        
+        pen_req.off = 1
         pen_req.width = 5 
         future = self.pen.call_async(pen_req)
         time.sleep(0.1)
         
-        teleport_request.x = x - 0.5
-        teleport_request.y = y - 0.5
+        teleport_request.x = x - 0.25
+        teleport_request.y = y - 0.25
         teleport_request.theta = 0.0
         self.teleport.call_async(teleport_request)
         time.sleep(0.1)
     
-        # Lower pen for second diagonal
-        pen_req.off = 0  # Lower pen
+    
+        pen_req.off = 0 
         pen_req.width = 5 
         future = self.pen.call_async(pen_req)
         time.sleep(0.1)
     
-        # Draw second diagonal (bottom-left to top-right)
-        teleport_request.x = x + 0.5
-        teleport_request.y = y + 0.5
+        
+        teleport_request.x = x + 0.25
+        teleport_request.y = y + 0.25
         teleport_request.theta = 0.0
         self.teleport.call_async(teleport_request)
         time.sleep(0.1)
     
-        # Lift pen at the end
-        pen_req.off = 1  # Lift pen
+    
+        pen_req.off = 1
         pen_req.width = 5 
         self.pen.call_async(pen_req)
         time.sleep(0.1)
     
-        self.get_logger().info("X set")
-    
-
-    
+        self.get_logger().info("Waypoint")
+       
 
 
     def load_callback(self, request, response):
@@ -148,18 +149,17 @@ class Waypoint(Node):
             return response
     
 
-        self.client.call_async(Empty.Request())
-        
+        self.client.call_async(Empty.Request())        
         self.get_logger().info("/reset complete")
 
-        waypoints = request.waypoints
+        self.waypoints_list = request.waypoints
 
-        for wp in waypoints:
+        for wp in self.waypoints_list:
             self.draw_x(wp.x, wp.y) #drawing x at all the waypoints
 
         request = TeleportAbsolute.Request() #teleporting the turtle back to the 1st waypoint
-        request.x = waypoints[0].x
-        request.y = waypoints[0].y      
+        request.x = self.waypoints_list[0].x
+        request.y = self.waypoints_list[0].y      
         self.teleport.call_async(request)  
         
 
@@ -167,12 +167,12 @@ class Waypoint(Node):
 
         distance = 0.0
 
-        for i in range(len(waypoints)-1):
-            p1 = waypoints[i]
-            p2 =  waypoints[i+1]
+        for i in range(len(self.waypoints_list)-1):
+            p1 = self.waypoints_list[i]
+            p2 =  self.waypoints_list[i+1]
             distance+= math.dist([p1.x, p1.y], [p2.x, p2.y])
 
-        distance += math.dist([waypoints[0].x, waypoints[0].y], [waypoints[len(waypoints)-1].x,waypoints[len(waypoints)-1].y ])
+        distance += math.dist([self.waypoints_list[0].x, self.waypoints_list[0].y], [self.waypoints_list[len(self.waypoints_list)-1].x, self.waypoints_list[len(self.waypoints_list)-1].y ])
 
         response.distance = distance
 
