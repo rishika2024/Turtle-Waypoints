@@ -19,7 +19,7 @@ class Waypoint(Node):
     def __init__(self):
         super().__init__("waypoint")
         self.get_logger().info("Waypoint Node")        
-        self.timeperiod = 0.5
+        self.timeperiod = 0.1
         self.tmr = self.create_timer(self.timeperiod, self.timer_callback)
         self.srv = self.create_service(Empty, 'toggle', self.toggle_callback)
         self.cmd_vel_pub = self.create_publisher(Twist, '/turtle1/cmd_vel', 10)
@@ -40,10 +40,18 @@ class Waypoint(Node):
         self.teleport = self.create_client(TeleportAbsolute, 'turtle1/teleport_absolute')
 
         self.waypoints_list = []
-        
+        self.current_waypoint_index = 0
+
+        self.target_reached = False
+        self.target_angle_reached = False
+
     def toggle_callback(self, request, response):
 
         if self.state == self.STOP:
+            if not self.waypoints_list:
+                self.get_logger().error("No waypoints loaded yet, load with load service")
+                return response
+                
             self.state = self.MOVING
             self.get_logger().info("MOVING!!!")
 
@@ -52,34 +60,102 @@ class Waypoint(Node):
             self.get_logger().info("STOPPING!!!")
 
         return response    
-        
-
-    def timer_callback(self):  
-
-        msg = Twist()      
-
-        self.get_logger().debug(f"Issuing Command!")
-
-        if self.state == self.MOVING:
-            msg.linear.x = 5.0
-            msg.angular.z = 7.0
-            self.cmd_vel_pub.publish(msg)
-        else:
-            msg.linear.x = 0.0
-            msg.angular.z = 0.0
-            self.cmd_vel_pub.publish(msg)   
-
+    
     def pose_callback(self, msg):
 
         self.current_pose = msg
-        self.get_logger().debug(f"Pose updated: x={msg.x:.2f}, y={msg.y:.2f}, theta={msg.theta:.2f}")
-
-    def draw_x(self, x, y):
-
-        self.get_logger().info(f"Drawing X at ({x}, {y})")
     
+    def reach_target(self, target_x = 0.0, target_y = 0.0, current_x = 0.0, current_y = 0.0, current_theta = 0.0):
         
         pen_req = SetPen.Request()
+        msg = Twist()
+
+        current_distance = math.dist([target_x, target_y], [current_x, current_y])
+
+        dx = target_x - current_x
+        dy = target_y - current_y
+        theta_wrt_target = math.atan2(dy, dx)
+        theta_error = theta_wrt_target-current_theta
+
+         #normalizing so that theta error is between -pi to +pi
+        theta_error = math.atan2(math.sin(theta_error), math.cos(theta_error))
+
+        pen_req.r = 255
+        pen_req.width = 5
+
+        # If we're close enough to waypoint, mark it as reached
+
+        if current_distance<0.1:
+            return True
+        
+
+        if abs(theta_error) > 0.01:
+
+            pen_req.off = 1
+            cmd_vel_theta = theta_error*2
+            msg.angular.z = cmd_vel_theta
+            msg.lin .x = 0.0
+            msg.linear.y = 0.0
+                       
+
+        else: 
+            pen_req.off = 0   
+
+            cmd_vel_dist = min(current_distance*1.5, 1.0)
+            msg.angular.z = 0.0
+            msg.linear.x = cmd_vel_dist
+            msg.linear.y = 0.0
+
+        self.cmd_vel_pub.publish(msg) 
+
+
+    def timer_callback(self):  
+
+        msg = Twist()    
+
+        if self.state == self.MOVING:
+            if not self.waypoints_list:
+                self.get_logger().error("No waypoints loaded yet, load with load service")
+                self.state = self.STOP
+                return
+            
+            if self.current_pose is None:
+                return
+                
+            target_x = self.waypoints_list[self.current_waypoint_index].x
+            target_y = self.waypoints_list[self.current_waypoint_index].y
+            current_x = self.current_pose.x
+            current_y = self.current_pose.y
+            current_theta = self.current_pose.theta         
+            
+            # FIX: Call reach_target every time and check return value
+            waypoint_reached = self.reach_target(
+                target_x=target_x, 
+                target_y=target_y, 
+                current_x=current_x, 
+                current_y=current_y, 
+                current_theta=current_theta
+            )
+            
+            if waypoint_reached:
+                self.current_waypoint_index += 1
+                if self.current_waypoint_index >= len(self.waypoints_list):
+                    self.current_waypoint_index = 0
+                    self.get_logger().info("Completed all waypoints!")
+               
+        else:
+            msg.linear.x = 0.0
+            msg.angular.z = 0.0
+            msg.linear.y = 0.0
+            self.cmd_vel_pub.publish(msg)   
+        
+    def draw_x(self, x, y):
+
+        self.get_logger().info(f"Drawing X at ({x}, {y})")    
+        
+        pen_req = SetPen.Request()
+        pen_req.r = 255
+        pen_req.g = 255
         pen_req.b = 255
         pen_req.off = 1  
         pen_req.width = 5
@@ -116,8 +192,7 @@ class Waypoint(Node):
         teleport_request.y = y - 0.25
         teleport_request.theta = 0.0
         self.teleport.call_async(teleport_request)
-        time.sleep(0.1)
-    
+        time.sleep(0.1)    
     
         pen_req.off = 0 
         pen_req.width = 5 
@@ -177,6 +252,8 @@ class Waypoint(Node):
         response.distance = distance
 
         self.get_logger().info(f"Total cycle distance = {distance:.2f}")
+
+        
         return response
 
         
