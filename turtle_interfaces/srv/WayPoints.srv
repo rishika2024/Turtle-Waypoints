@@ -1,3 +1,4 @@
-turtle_interfaces/Request request
+geometry_msgs/Point[] waypoints
 ---
-turtle_interfaces/Response response
+float64 distance
+
