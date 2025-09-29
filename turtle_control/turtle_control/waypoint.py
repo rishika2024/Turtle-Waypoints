@@ -7,7 +7,7 @@ from rclpy.node import Node
 from rclpy.executors import ExternalShutdownException
 from std_srvs.srv import Empty
 
-from turtlesim_msgs.srv import TeleportAbsolute
+from turtlesim_msgs.srv import TeleportAbsolute, SetPen
 
 import math
 
@@ -29,6 +29,8 @@ class Waypoint(Node):
         self.state = self.STOP
 
         self.client = self.create_client(Empty, '/reset') #to restart turtlesim
+
+        self.pen = self.create_client(SetPen, 'turtle1/set_pen')
 
         
         self.teleport = self.create_client(TeleportAbsolute, 'turtle1/teleport_absolute')
@@ -63,31 +65,36 @@ class Waypoint(Node):
 
     def draw_x(self, x, y):
 
+        pen_req = SetPen.Request()
+        pen_req.off = 0
+        self.pen.call_async(pen_req)
+
         request = TeleportAbsolute.Request()
+        future = self.teleport.call_async(request)
 
         request.x = x+1
-        request.y = y+1        
-        self.teleport.call_async(request)
+        request.y = y+1                
+        rclpy.spin_until_future_complete(self, future)
 
         request.x = x-1
         request.y = y-1        
-        self.teleport.call_async(request)
+        rclpy.spin_until_future_complete(self, future)
 
         request.x = x
         request.y = y        
-        self.teleport.call_async(request)
+        rclpy.spin_until_future_complete(self, future)
 
         request.x = x-1
         request.y = y+1        
-        self.teleport.call_async(request)
+        rclpy.spin_until_future_complete(self, future)
 
         request.x = x+1
         request.y = y-1        
-        self.teleport.call_async(request)
+        rclpy.spin_until_future_complete(self, future)
 
         request.x = x
         request.y = y        
-        self.cli.call_async(request)    
+        rclpy.spin_until_future_complete(self, future)  
     
 
 
@@ -103,8 +110,9 @@ class Waypoint(Node):
 
         request = TeleportAbsolute.Request() #teleporting the turtle back to the 1st waypoint
         request.x = waypoints[0].x
-        request.y = waypoints[0].y        
-        self.teleport.call_async(request)
+        request.y = waypoints[0].y      
+        future = self.teleport.call_async(request)  
+        rclpy.spin_until_future_complete(self, future)
 
         self.state = self.STOP
 
