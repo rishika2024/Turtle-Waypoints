@@ -1,4 +1,5 @@
 from geometry_msgs.msg import Twist
+from turtlesim_msgs.msg import Pose
 
 from turtle_interfaces.srv import WayPoints
 
@@ -10,6 +11,7 @@ from std_srvs.srv import Empty
 from turtlesim_msgs.srv import TeleportAbsolute, SetPen
 
 import math
+import time
 
 
 
@@ -21,6 +23,8 @@ class Waypoint(Node):
         self.tmr = self.create_timer(self.timeperiod, self.timer_callback)
         self.srv = self.create_service(Empty, 'toggle', self.toggle_callback)
         self.cmd_vel_pub = self.create_publisher(Twist, '/turtle1/cmd_vel', 10)
+        #self.pose_pub = self.create_subscription(Pose, '/turtle1/pose', self.pose_callback, 10)
+        self.current_pose = None
 
         self.srv_load= self.create_service(WayPoints, 'load', self.load_callback)
 
@@ -63,45 +67,90 @@ class Waypoint(Node):
             msg.angular.z = 0.0
             self.cmd_vel_pub.publish(msg)      
 
+  
+
+
+        
+
     def draw_x(self, x, y):
 
+        self.get_logger().info(f"Drawing X at ({x}, {y})")
+    
+        # First, lift pen and move to starting position
         pen_req = SetPen.Request()
-        pen_req.off = 0
+        """pen_req.off = 1  # Lift pen
+        pen_req.width = 5 
+        self.pen.call_async(pen_req)        
+        time.sleep(0.1)"""
+        
+        teleport_request = TeleportAbsolute.Request()       
+        teleport_request.x = x - 0.5
+        teleport_request.y = y + 0.5
+        teleport_request.theta = 0.0
+        self.teleport.call_async(teleport_request)
+        time.sleep(0.1)
+    
+        # Lower pen for first diagonal
+        pen_req.off = 0  # Lower pen
+        pen_req.width = 5 
         self.pen.call_async(pen_req)
+        time.sleep(0.1)
+    
+        # Draw first diagonal (top-left to bottom-right)
+        teleport_request.x = x + 0.5
+        teleport_request.y = y - 0.5
+        teleport_request.theta = 0.0
+        self.teleport.call_async(teleport_request)
+        time.sleep(0.1)
+    
+        # Lift pen and move to start of second diagonal
+        pen_req.off = 1  # Lift pen
+        pen_req.width = 5 
+        future = self.pen.call_async(pen_req)
+        time.sleep(0.1)
+        
+        teleport_request.x = x - 0.5
+        teleport_request.y = y - 0.5
+        teleport_request.theta = 0.0
+        self.teleport.call_async(teleport_request)
+        time.sleep(0.1)
+    
+        # Lower pen for second diagonal
+        pen_req.off = 0  # Lower pen
+        pen_req.width = 5 
+        future = self.pen.call_async(pen_req)
+        time.sleep(0.1)
+    
+        # Draw second diagonal (bottom-left to top-right)
+        teleport_request.x = x + 0.5
+        teleport_request.y = y + 0.5
+        teleport_request.theta = 0.0
+        self.teleport.call_async(teleport_request)
+        time.sleep(0.1)
+    
+        # Lift pen at the end
+        pen_req.off = 1  # Lift pen
+        pen_req.width = 5 
+        self.pen.call_async(pen_req)
+        time.sleep(0.1)
+    
+        self.get_logger().info("X set")
+    
 
-        request = TeleportAbsolute.Request()
-        future = self.teleport.call_async(request)
-
-        request.x = x+1
-        request.y = y+1                
-        rclpy.spin_until_future_complete(self, future)
-
-        request.x = x-1
-        request.y = y-1        
-        rclpy.spin_until_future_complete(self, future)
-
-        request.x = x
-        request.y = y        
-        rclpy.spin_until_future_complete(self, future)
-
-        request.x = x-1
-        request.y = y+1        
-        rclpy.spin_until_future_complete(self, future)
-
-        request.x = x+1
-        request.y = y-1        
-        rclpy.spin_until_future_complete(self, future)
-
-        request.x = x
-        request.y = y        
-        rclpy.spin_until_future_complete(self, future)  
     
 
 
     def load_callback(self, request, response):
         self.get_logger().info("load service")
 
-        rclpy.spin_until_future_complete(self, self.client.call_async(Empty.Request()))
+        if not self.client.wait_for_service(timeout_sec=2.0):
+            self.get_logger().error("/reset not available")
+            return response
+    
+
+        self.client.call_async(Empty.Request())
+        
+        self.get_logger().info("/reset complete")
 
         waypoints = request.waypoints
 
@@ -111,8 +160,8 @@ class Waypoint(Node):
         request = TeleportAbsolute.Request() #teleporting the turtle back to the 1st waypoint
         request.x = waypoints[0].x
         request.y = waypoints[0].y      
-        future = self.teleport.call_async(request)  
-        rclpy.spin_until_future_complete(self, future)
+        self.teleport.call_async(request)  
+        
 
         self.state = self.STOP
 
@@ -140,11 +189,3 @@ def main(args=None):
 
 if __name__ == '__main__':
     main()
-
-
-
-
-
-
-
-
