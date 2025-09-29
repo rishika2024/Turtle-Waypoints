@@ -10,10 +10,9 @@ find_package(ament_cmake REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
 
-rosidl_generate_interfaces(${PROJECT_NAME}
-  "msg/Request.msg"
-  "msg/Response.msg"
+rosidl_generate_interfaces(${PROJECT_NAME}  
   "srv/WayPoints.srv"
+  DEPENDENCIES geometry_msgs
 )
 
 
