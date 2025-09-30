@@ -10,12 +10,16 @@ find_package(ament_cmake REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
 
+install(
+  DIRECTORY launch config
+  DESTINATION share/${PROJECT_NAME}
+)
+
 rosidl_generate_interfaces(${PROJECT_NAME}  
   "srv/WayPoints.srv"
   "msg/ErrorMetric.msg"
   DEPENDENCIES geometry_msgs
 )
-
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
