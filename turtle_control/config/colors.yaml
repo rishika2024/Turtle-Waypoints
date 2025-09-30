@@ -1,5 +1,5 @@
-turtlesim_node:
-  ros__parameters:
+/turtlesim1/sim:
+   ros__parameters:
     background_r: 191
     background_g: 0
     background_b: 255

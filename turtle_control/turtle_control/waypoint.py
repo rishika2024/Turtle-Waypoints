@@ -25,7 +25,7 @@ class Waypoint(Node):
         self.get_logger().info("Waypoint Node")  
         self.cbgroup = MutuallyExclusiveCallbackGroup()  
             
-        self.timeperiod = 0.1
+        self.timeperiod = 0.01
         self.tmr = self.create_timer(self.timeperiod, self.timer_callback)
         self.srv = self.create_service(Empty, 'toggle', self.toggle_callback)
         self.cmd_vel_pub = self.create_publisher(Twist, '/turtle1/cmd_vel', 10)
@@ -38,7 +38,7 @@ class Waypoint(Node):
         self.STOP = False
         self.state = self.STOP
 
-        self.client = self.create_client(Empty, '/reset', callback_group=self.cbgroup)
+        self.client = self.create_client(Empty, 'reset', callback_group=self.cbgroup)
         self.pen = self.create_client(SetPen, 'turtle1/set_pen', callback_group=self.cbgroup)        
         self.teleport = self.create_client(TeleportAbsolute, 'turtle1/teleport_absolute', callback_group=self.cbgroup)
 
