@@ -24,8 +24,10 @@
     </node>
 
     <!-- ROS Bag-->
-    <node pkg="rosbag2" exec="record" name="rosbag_record" args="-o $(find-pkg-share turtle_conrol)/bags/session /turtle1/cmd_vel">
-    </node>
+    <group if="$(arg record)">
+        <node pkg="rosbag2" exec="record" name="rosbag_record" args="-o $(find-pkg-share turtle_conrol)/bags/session /turtle1/cmd_vel">
+        </node>
+    </group>
 
 </launch>
     
