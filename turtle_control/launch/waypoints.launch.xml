@@ -1,1 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+ 
 
+  <!-- start a turtlesim_node in the turtlesim1 namespace -->
+  <node pkg="turtlesim" exec="turtlesim_node" name="sim" namespace="turtlesim1" />
+       <rosparam file="$turtle_control/config/colors.yaml" />
+  </node>
+
+  <!-- start waypoint node -->
+  <node pkg="turtle_control" exec="Waypoint" name="sim" namespace="waypoint"> 
+  </node>
+
+  
+</launch>
