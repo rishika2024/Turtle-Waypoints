@@ -1,7 +1,9 @@
 from geometry_msgs.msg import Twist
 from turtlesim_msgs.msg import Pose
 
+
 from turtle_interfaces.srv import WayPoints
+from turtle_interfaces.msg import ErrorMetric
 
 import rclpy
 from rclpy.node import Node
@@ -13,7 +15,7 @@ from std_srvs.srv import Empty
 from turtlesim_msgs.srv import TeleportAbsolute, SetPen
 
 import math
-import time
+
 
 
 
@@ -27,7 +29,7 @@ class Waypoint(Node):
         self.tmr = self.create_timer(self.timeperiod, self.timer_callback)
         self.srv = self.create_service(Empty, 'toggle', self.toggle_callback)
         self.cmd_vel_pub = self.create_publisher(Twist, '/turtle1/cmd_vel', 10)
-        self.pose_pub = self.create_subscription(Pose, '/turtle1/pose', self.pose_callback, 10)
+        self.pose_sub = self.create_subscription(Pose, '/turtle1/pose', self.pose_callback, 10)
         self.current_pose = None
 
         self.srv_load= self.create_service(WayPoints, 'load', self.load_callback)
@@ -36,7 +38,6 @@ class Waypoint(Node):
         self.STOP = False
         self.state = self.STOP
 
-        # FIX: All clients in the same callback group
         self.client = self.create_client(Empty, '/reset', callback_group=self.cbgroup)
         self.pen = self.create_client(SetPen, 'turtle1/set_pen', callback_group=self.cbgroup)        
         self.teleport = self.create_client(TeleportAbsolute, 'turtle1/teleport_absolute', callback_group=self.cbgroup)
@@ -44,6 +45,14 @@ class Waypoint(Node):
         self.waypoints_list = []
         self.current_waypoint_index = 0
         self.tolerance = 0.1
+
+        self.error_pub = self.create_publisher(ErrorMetric, '/loop_metrics', 10)
+        self.count_loop = 0
+        self.actual_distance = 0.0
+        self.error = 0.0
+
+        self.previous_pose = None
+        self.current_pose = None
 
     def toggle_callback(self, request, response):
         if self.state == self.STOP:
@@ -57,8 +66,15 @@ class Waypoint(Node):
             self.get_logger().info("STOPPING!!!")
         return response    
     
-    def pose_callback(self, msg):
-        self.current_pose = msg
+    def pose_callback(self, pose_msg ):
+         
+    
+        self.previous_pose = self.current_pose
+        self.current_pose = pose_msg        
+        
+        if self.current_pose is not None and self.previous_pose is not None:
+            distance_increment = math.dist([self.current_pose.x, self.current_pose.y],[self.previous_pose.x, self.previous_pose.y])
+            self.actual_distance += distance_increment
     
     def reach_target(self, target_x = 0.0, target_y = 0.0, current_x = 0.0, current_y = 0.0, current_theta = 0.0):             
         msg = Twist()
@@ -115,6 +131,15 @@ class Waypoint(Node):
                 self.current_waypoint_index += 1
                 if self.current_waypoint_index >= len(self.waypoints_list):
                     self.current_waypoint_index = 0
+
+                    #error metrics:
+                    self.count_loop+=1 
+                    metric = ErrorMetric()
+                    metric.complete_loops = self.count_loop
+                    metric.actual_distance = self.actual_distance
+                    metric.error = self.error            
+                    self.error_pub.publish(metric)
+
                     self.get_logger().info("Completed all waypoints! Cycling back to start.")
         else:
             msg = Twist()
@@ -176,7 +201,7 @@ class Waypoint(Node):
     async def load_callback(self, request, response):
         self.get_logger().info("load service started")
 
-        # FIX: Make service calls async with proper await
+        
         reset_req = Empty.Request()
         print('this far')
         await self.client.call_async(reset_req)
@@ -223,8 +248,17 @@ class Waypoint(Node):
                                 [self.waypoints_list[-1].x, self.waypoints_list[-1].y])
 
         response.distance = distance
+        self.error = distance - self.actual_distance
         self.get_logger().info(f"Total cycle distance = {distance:.2f}")
         self.get_logger().info("load service completed")
+
+        self.count_loop = 0
+        self.actual_distance = 0.0
+        self.error = 0.0
+
+        self.previous_pose = None
+        self.current_pose = None
+        
 
         return response
 
