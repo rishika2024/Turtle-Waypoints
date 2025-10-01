@@ -9,4 +9,4 @@ Author: `Rishika Bera`
 
 6. Here is a video when the bag is played.
 
- https://github.com/ME495-EmbeddedSystems/homework-1-rishika2024/issues/2#issue-3471929929
+[ https://github.com/ME495-EmbeddedSystems/homework-1-rishika2024/issues/2#issue-3471929929](https://github.com/ME495-EmbeddedSystems/homework-1-rishika2024/issues/2#issue-3471929929)
