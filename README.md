@@ -9,4 +9,4 @@ Author: `Rishika Bera`
 
 6. Here is a video when the bag is played.
 
-   ${embed video here, must show up inline in the README.md when rendered on github. Video file itself should be uploaded as a github issue and linked here, not in the repository}`
+ https://github.com/ME495-EmbeddedSystems/homework-1-rishika2024/issues/2#issue-3471929929
