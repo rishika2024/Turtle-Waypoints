@@ -1,60 +1,86 @@
 from geometry_msgs.msg import Twist
 from turtlesim_msgs.msg import Pose
-
-
 from turtle_interfaces.srv import WayPoints
 from turtle_interfaces.msg import ErrorMetric
-
 import rclpy
 from rclpy.node import Node
 from rclpy.executors import ExternalShutdownException
 from rclpy.callback_groups import MutuallyExclusiveCallbackGroup
-
 from std_srvs.srv import Empty
-
 from turtlesim_msgs.srv import TeleportAbsolute, SetPen
-
 import math
 
-
-
-
 class Waypoint(Node):
+    """
+    A ROS2 node for controlling turtle movement through waypoints.
+
+    This node - 
+    
+    1) generats waypoints given a list of points
+    2) makes the turtle move to each waypoint in a loop
+    3) has a toggle function to start and stop the turtle
+    4) publishes error metrics   
+
+    """
+    
     def __init__(self):
+
+        """Initialize the Waypoint Node with publishers, subscribers, and services."""
+
         super().__init__("waypoint")
-        self.get_logger().info("Waypoint Node")  
-        self.cbgroup = MutuallyExclusiveCallbackGroup()  
-            
+        self.get_logger().info("Waypoint Node Started")
+        
+        # Callback group for mutually exclusive callbacks
+        self.cbgroup = MutuallyExclusiveCallbackGroup()
+        
+        # Timer configuration
         self.timeperiod = 0.01
         self.tmr = self.create_timer(self.timeperiod, self.timer_callback)
+        
+        # Service servers
         self.srv = self.create_service(Empty, 'toggle', self.toggle_callback)
+        self.srv_load = self.create_service(WayPoints, 'load', self.load_callback)
+        
+        # Publishers
         self.cmd_vel_pub = self.create_publisher(Twist, '/turtle1/cmd_vel', 10)
-        self.pose_sub = self.create_subscription(Pose, '/turtle1/pose', self.pose_callback, 10)
-        self.current_pose = None
-
-        self.srv_load= self.create_service(WayPoints, 'load', self.load_callback)
-
+        self.error_pub = self.create_publisher(ErrorMetric, '/loop_metrics', 10)
+        
+        # Subscribers
+        self.pose_sub = self.create_subscription(
+            Pose, '/turtle1/pose', self.pose_callback, 10
+        )
+        
+        # Service clients
+        self.client = self.create_client(Empty, 'reset', callback_group=self.cbgroup)
+        self.pen = self.create_client(SetPen, 'turtle1/set_pen', callback_group=self.cbgroup)
+        self.teleport = self.create_client(
+            TeleportAbsolute, 'turtle1/teleport_absolute', callback_group=self.cbgroup
+        )
+        
+        # State management
         self.MOVING = True
         self.STOP = False
         self.state = self.STOP
-
-        self.client = self.create_client(Empty, 'reset', callback_group=self.cbgroup)
-        self.pen = self.create_client(SetPen, 'turtle1/set_pen', callback_group=self.cbgroup)        
-        self.teleport = self.create_client(TeleportAbsolute, 'turtle1/teleport_absolute', callback_group=self.cbgroup)
-
+        
+        # Waypoint management
         self.waypoints_list = []
         self.current_waypoint_index = 0
-        self.tolerance = 0.1
-
-        self.error_pub = self.create_publisher(ErrorMetric, '/loop_metrics', 10)
+        self.tolerance = 0.05
+        
+        # Pose tracking
+        self.previous_pose = None
+        self.current_pose = None
+        
+        # Performance metrics
         self.count_loop = 0
         self.actual_distance = 0.0
         self.error = 0.0
 
-        self.previous_pose = None
-        self.current_pose = None
-
     def toggle_callback(self, request, response):
+        """
+        The toggle function for starting and stopping the turtle's movement. 
+
+        """
         if self.state == self.STOP:
             if not self.waypoints_list:
                 self.get_logger().error("No waypoints loaded. Load them with the 'load' service.")
@@ -67,8 +93,12 @@ class Waypoint(Node):
         return response    
     
     def pose_callback(self, pose_msg ):
-         
-    
+
+        """
+        The pose function keeps track of the current pose and the previous pose
+        It also calculates the actual distance traversed
+
+        """            
         self.previous_pose = self.current_pose
         self.current_pose = pose_msg        
         
@@ -76,7 +106,24 @@ class Waypoint(Node):
             distance_increment = math.dist([self.current_pose.x, self.current_pose.y],[self.previous_pose.x, self.previous_pose.y])
             self.actual_distance += distance_increment
     
-    def reach_target(self, target_x = 0.0, target_y = 0.0, current_x = 0.0, current_y = 0.0, current_theta = 0.0):             
+    def reach_target(self, target_x = 0.0, target_y = 0.0, current_x = 0.0, current_y = 0.0, current_theta = 0.0): 
+
+        """
+        This function implements a p-control-algorithm to reach the target. 
+
+        Args:
+        - target_x (float) : the x coordinate of the target position
+        - target_y (float) : the y coordinate of the target position
+        - current_x (float) : the x coordinate of the current position
+        - current_y (float) : the y coordinate of the current position
+        - theta (float) : current orientation of the turtle with respect to its x-axis
+           
+
+
+        Returns:
+        - True : if the target has been reached
+        - False: if target is not reached
+        """    
         msg = Twist()
         current_distance = math.dist([target_x, target_y], [current_x, current_y])
 
@@ -103,7 +150,21 @@ class Waypoint(Node):
         self.cmd_vel_pub.publish(msg) 
         return False
 
-    def timer_callback(self):  
+    def timer_callback(self): 
+        """
+    This function controls the turtle's movement with timer tick.
+    
+    When moving state is active:
+    - Guides the turtle to the current target waypoint
+    - Advances to next waypoint when current is reached
+    - Records performance metrics when completing all waypoints
+    
+    When stopped state is active:
+    - Stops the turtle by publishing zero velocity commands
+
+    Returns:
+        None
+    """ 
         if self.state == self.MOVING:
             if not self.waypoints_list:
                 self.get_logger().error("No waypoints loaded. Load them with the 'load' service.")
@@ -119,13 +180,7 @@ class Waypoint(Node):
             current_y = self.current_pose.y
             current_theta = self.current_pose.theta         
             
-            waypoint_reached = self.reach_target(
-                target_x=target_x, 
-                target_y=target_y, 
-                current_x=current_x, 
-                current_y=current_y, 
-                current_theta=current_theta
-            )
+            waypoint_reached = self.reach_target(target_x=target_x, target_y=target_y, current_x=current_x, current_y=current_y, current_theta=current_theta)
             
             if waypoint_reached:
                 self.current_waypoint_index += 1
@@ -149,6 +204,17 @@ class Waypoint(Node):
             self.cmd_vel_pub.publish(msg)   
         
     async def draw_x(self, x, y):
+        """
+        This function is used to draw the x on each waypoint
+
+        Args:
+        - x : the x coordinate of the desired waypoint
+        - y : the y coordinate of the desired waypoint     
+        
+        Returns:
+        - None 
+
+        """
         self.get_logger().info(f"Drawing X at ({x}, {y})")    
         
         pen_req = SetPen.Request()
@@ -199,6 +265,14 @@ class Waypoint(Node):
         self.get_logger().info("Waypoint drawn")
 
     async def load_callback(self, request, response):
+        """
+         This function calls the load service. When the service is called : 
+          - It resets the node, takes waypoint inputs,
+          - It takes waypoint inputs
+          - It draws 'x' on the way points and returns to the first waypoint
+          - Finally it calculates the total distance between waypoints in a loop    
+        """
+
         self.get_logger().info("load service started")
 
         
