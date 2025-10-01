@@ -5,7 +5,7 @@ Author: `Rishika Bera`
 3. The `ros2 service call /waypoint/toggle std_srvs/srv/Empty` starts and stops the turtle.
 4. Here is a video of the turtle in action.
    
-   [`https://github.com/user-attachments/assets/9a1160e5-c077-4f57-bacd-07185e7fcc36`](https://github.com/ME495-EmbeddedSystems/homework-1-rishika2024/issues/1#issue-3471890949)
+  <video src= "https://github.com/user-attachments/assets/9a1160e5-c077-4f57-bacd-07185e7fcc36`](https://github.com/ME495-EmbeddedSystems/homework-1-rishika2024/issues/1#issue-3471890949" controls width="600"></video>
 
 6. Here is a video when the bag is played.
 
