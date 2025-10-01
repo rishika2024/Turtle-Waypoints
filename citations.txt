@@ -1,0 +1,10 @@
+
+[Worked With: Andnet DeBoer, Theodore, Kasina Jyoti Swaroop, Md Saif Ahmad, Kyuwon Weon, Chenyu Zhu, Conor Hayes]
+
+[1] https://chatgpt.com/share/68dcb041-8340-8006-b731-a0615919e87d #information about turtle pen
+
+[2] https://chatgpt.com/share/68dcb131-8b48-8006-8bdc-2fa4fd424682 # information about teleport
+
+[3] https://chatgpt.com/share/68dcb250-26b8-8006-a436-39afdfb0a2e9 #information about cmd_vel, cmd_pose and control algorithm, and sample code
+
+[4] https://chat.deepseek.com/share/ueu6r2x64c56v9xkbq #information about screen recorder

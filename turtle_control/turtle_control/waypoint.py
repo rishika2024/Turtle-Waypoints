@@ -128,11 +128,15 @@ class Waypoint(Node):
         msg = Twist()
         current_distance = math.dist([target_x, target_y], [current_x, current_y])
 
+        ############################### Begin_Citation [4] ############################
+
         dx = target_x - current_x
         dy = target_y - current_y
         theta_wrt_target = math.atan2(dy, dx)
         theta_error = theta_wrt_target - current_theta
         theta_error = math.atan2(math.sin(theta_error), math.cos(theta_error))
+
+        ############################### End_Citation [4] ############################
 
         if current_distance < self.tolerance:
             return True
