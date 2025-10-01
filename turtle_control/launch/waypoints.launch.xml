@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
+
 <launch>
     
  
@@ -21,16 +22,7 @@
         <remap from="turtle1/set_pen" to="/turtlesim1/turtle1/set_pen"/>
         <remap from="turtle1/teleport_absolute" to="/turtlesim1/turtle1/teleport_absolute"/>     
         
-    </node>
-
-    <!-- ROS Bag-->
-    <group if="$(arg record)">
-        <node pkg="rosbag2" exec="record" name="rosbag_record" args="-o $(find-pkg-share turtle_conrol)/bags/session /turtle1/cmd_vel">
-        </node>
-    </group>
-
-</launch>
-    
+    </node>    
 
   
 </launch>

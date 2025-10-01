@@ -66,6 +66,7 @@ class Waypoint(Node):
         self.waypoints_list = []
         self.current_waypoint_index = 0
         self.tolerance = 0.05
+        self.distance = 0.0
         
         # Pose tracking
         self.previous_pose = None
@@ -187,15 +188,28 @@ class Waypoint(Node):
                 if self.current_waypoint_index >= len(self.waypoints_list):
                     self.current_waypoint_index = 0
 
+                    #calculating distance between waypoints in a loop
+                    distance = 0.0
+                    for i in range(len(self.waypoints_list)-1):
+                        p1 = self.waypoints_list[i]
+                        p2 = self.waypoints_list[i+1]
+                        distance += math.dist([p1.x, p1.y], [p2.x, p2.y])
+         
+                        
+                    distance += math.dist([self.waypoints_list[0].x, self.waypoints_list[0].y], [self.waypoints_list[-1].x, self.waypoints_list[-1].y])
+                    self.distance+=distance
+         
+                 
                     #error metrics:
                     self.count_loop+=1 
                     metric = ErrorMetric()
                     metric.complete_loops = self.count_loop
                     metric.actual_distance = self.actual_distance
+                    self.error += abs(self.actual_distance - self.distance)
                     metric.error = self.error            
                     self.error_pub.publish(metric)
 
-                    self.get_logger().info("Completed all waypoints! Cycling back to start.")
+                    
         else:
             msg = Twist()
             msg.linear.x = 0.0
@@ -276,10 +290,9 @@ class Waypoint(Node):
         self.get_logger().info("load service started")
 
         
-        reset_req = Empty.Request()
-        print('this far')
+        reset_req = Empty.Request()        
         await self.client.call_async(reset_req)
-        print('this far')
+        
         self.get_logger().info("/reset complete")
 
         self.waypoints_list = request.waypoints
@@ -310,22 +323,14 @@ class Waypoint(Node):
         pen_req.off = 0
         await self.pen.call_async(pen_req)
 
-        # Calculate distance
-        distance = 0.0
-        for i in range(len(self.waypoints_list)-1):
-            p1 = self.waypoints_list[i]
-            p2 = self.waypoints_list[i+1]
-            distance += math.dist([p1.x, p1.y], [p2.x, p2.y])
+        # Calculate distance       
 
-        if len(self.waypoints_list) > 1:
-            distance += math.dist([self.waypoints_list[0].x, self.waypoints_list[0].y], 
-                                [self.waypoints_list[-1].x, self.waypoints_list[-1].y])
-
-        response.distance = distance
-        self.error = distance - self.actual_distance
-        self.get_logger().info(f"Total cycle distance = {distance:.2f}")
-        self.get_logger().info("load service completed")
-
+        response.distance = self.distance
+        
+        
+        self.get_logger().info(f"Total cycle distance = {self.distance:.2f}")
+        self.get_logger().info("Completed all waypoints! Cycling back to start.")
+        
         self.count_loop = 0
         self.actual_distance = 0.0
         self.error = 0.0
